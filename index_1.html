@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Бюджет">
+<title>Бюджет — внести трату</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F1ECDC;
+    --paper-card:#FBF8F0;
+    --ink:#1E2A22;
+    --ink-soft:#5B6459;
+    --forest:#2F5233;
+    --red:#A63D2E;
+    --gold:#B08D57;
+    --line: rgba(30,42,34,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter', system-ui, sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .card{
+    width:100%;
+    max-width:420px;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:26px 22px 22px;
+  }
+  h1{
+    font-family:'PT Serif', serif;
+    font-size:22px;
+    margin:0 0 4px;
+    text-align:center;
+  }
+  .sub{
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    margin-bottom:22px;
+  }
+
+  .type-toggle{
+    display:flex;
+    border:1px solid var(--forest);
+    border-radius:3px;
+    overflow:hidden;
+    margin-bottom:18px;
+  }
+  .type-toggle button{
+    flex:1;
+    padding:10px;
+    border:none;
+    background:transparent;
+    color:var(--forest);
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:background .2s, color .2s;
+  }
+  .type-toggle button.active{
+    background:var(--forest);
+    color:var(--paper-card);
+  }
+
+  .summary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:6px;
+  }
+  .summary-item{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:3px;
+    padding:10px 12px;
+    text-align:center;
+  }
+  .summary-label{
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--ink-soft);
+    margin-bottom:4px;
+  }
+  .summary-value{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:17px;
+    font-weight:600;
+  }
+  .summary-value.income{ color:var(--forest); }
+  .summary-value.expense{ color:var(--red); }
+  .summary-refresh{
+    text-align:center;
+    font-size:11px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    margin-bottom:16px;
+    text-decoration:underline dotted;
+  }
+  .summary-refresh:hover{ color:var(--gold); }
+
+  .balance-block{
+    border:1px dashed var(--gold);
+    border-radius:3px;
+    padding:12px;
+    margin-bottom:18px;
+  }
+  .balance-block label{ margin-top:0; }
+  .balance-row{
+    display:flex;
+    gap:8px;
+  }
+  .balance-row input{ flex:1; }
+  .balance-row button{
+    padding:0 16px;
+    background:var(--gold);
+    color:#fff;
+    border:none;
+    border-radius:3px;
+    font-family:'Inter', sans-serif;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .balance-row button:disabled{ opacity:0.6; }
+
+  label{
+    display:block;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--ink-soft);
+    margin:14px 0 6px;
+  }
+  select, input{
+    width:100%;
+    padding:12px 10px;
+    font-size:16px;
+    font-family:'Inter', sans-serif;
+    border:1px solid var(--line);
+    border-radius:3px;
+    background:#fff;
+    color:var(--ink);
+  }
+  input[type="number"]{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:20px;
+  }
+  select:focus, input:focus{
+    outline:none;
+    border-color:var(--gold);
+  }
+
+  button#submitBtn{
+    width:100%;
+    margin-top:22px;
+    padding:14px;
+    background:var(--forest);
+    color:var(--paper-card);
+    border:none;
+    border-radius:3px;
+    font-family:'PT Serif', serif;
+    font-size:16px;
+    cursor:pointer;
+    transition:background .2s, transform .1s;
+  }
+  button#submitBtn:active{ transform:scale(0.98); }
+  button#submitBtn:disabled{ opacity:0.6; cursor:default; }
+
+  .status{
+    margin-top:14px;
+    text-align:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    min-height:18px;
+  }
+  .status.ok{ color:var(--forest); }
+  .status.err{ color:var(--red); }
+
+  .history{
+    margin-top:22px;
+    border-top:1px dashed var(--line);
+    padding-top:14px;
+  }
+  .history h2{
+    font-family:'PT Serif', serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0 0 8px;
+    font-weight:400;
+  }
+  .history-item{
+    display:flex;
+    justify-content:space-between;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    padding:5px 0;
+    border-bottom:1px dashed var(--line);
+    color:var(--ink-soft);
+  }
+  .history-item:last-child{ border-bottom:none; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Бюджет</h1>
+  <div class="sub">внести трату / доход</div>
+
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-item">
+      <div class="summary-label">Доход, факт</div>
+      <div class="summary-value income" id="sumIncome">—</div>
+    </div>
+    <div class="summary-item">
+      <div class="summary-label">Расход, факт</div>
+      <div class="summary-value expense" id="sumExpense">—</div>
+    </div>
+  </div>
+  <div class="summary-refresh" id="summaryRefresh" onclick="loadSummary()">обновить ↻</div>
+
+  <div class="balance-block">
+    <label for="manualBalance">Остаток на счетах (ручной ввод)</label>
+    <div class="balance-row">
+      <input type="number" id="manualBalance" inputmode="decimal" placeholder="0" step="any">
+      <button type="button" id="balanceBtn" onclick="submitBalance()">Сохранить</button>
+    </div>
+    <div class="status" id="balanceStatus"></div>
+  </div>
+
+  <div class="type-toggle">
+    <button type="button" id="btnExpense" class="active" onclick="setType('expense')">Расход</button>
+    <button type="button" id="btnIncome" onclick="setType('income')">Доход</button>
+  </div>
+
+  <label for="category">Статья</label>
+  <select id="category"></select>
+
+  <label for="amount">Сумма, ₽</label>
+  <input type="number" id="amount" inputmode="decimal" placeholder="0" min="0" step="any">
+
+  <label for="month">Месяц</label>
+  <input type="month" id="month" onchange="loadSummary()">
+
+  <button id="submitBtn" onclick="submitEntry()">Отправить в бюджет</button>
+  <div class="status" id="status"></div>
+
+  <div class="history" id="historyBlock" style="display:none;">
+    <h2>Последние записи (эта сессия)</h2>
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<iframe name="hiddenTarget" id="hiddenTarget" style="display:none;"></iframe>
+<form id="hiddenForm" method="POST" target="hiddenTarget" style="display:none;">
+  <input type="hidden" name="category" id="f_category">
+  <input type="hidden" name="amount" id="f_amount">
+  <input type="hidden" name="month" id="f_month">
+  <input type="hidden" name="mode" id="f_mode">
+</form>
+<form id="balanceForm" method="POST" target="hiddenTarget" style="display:none;">
+  <input type="hidden" name="category" value="Остаток на счете ручной ввод">
+  <input type="hidden" name="amount" id="b_amount">
+  <input type="hidden" name="month" id="b_month">
+  <input type="hidden" name="mode" value="set">
+</form>
+
+<script>
+// ⚠️ ВСТАВЬТЕ СЮДА URL вашего Apps Script веб-приложения (тот же, что используется для Telegram-бота)
+const WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbyHMUFTY-FL1uNWpPoRflfF-Ck5XmgmDEfdZU7e-Y7s5pQ4k0W8qg_wVnFR5rUvagEKlw/exec';
+
+const EXPENSE_CATEGORIES = [
+  'Кредиты', 'Долг', 'Еда', 'Фастфуд', 'ДОМ', 'Столовая', 'Здоровье', 'Квартплата',
+  'Бенз', 'Проезд', 'Школьное питание', 'Допзанятия в школе', 'Интерне/связь',
+  'Колеса/ТО/Осаго', 'Одежда', 'Красота', 'Кружки/СПОРТ', 'Игрушки, аксессуары итд',
+  'Семейные ДР/Развлечения/Кафе'
+];
+const INCOME_CATEGORIES = ['ЗП Муж', 'Аванс Муж', 'Премия', 'ЗП жена', 'Аванс Жена', 'Дополнительный доход'];
+
+function fmtMoney(n){
+  if(n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('ru-RU') + ' ₽';
+}
+
+function loadSummary(){
+  if(WEBHOOK_URL.indexOf('ВСТАВЬТЕ') !== -1) return;
+  const month = document.getElementById('month').value || currentMonthValue();
+  const cbName = 'summaryCallback_' + Date.now();
+  window[cbName] = function(data){
+    if(data && data.ok){
+      document.getElementById('sumIncome').textContent = fmtMoney(data.incomeFact);
+      document.getElementById('sumExpense').textContent = fmtMoney(data.expenseFact);
+      if(data.manualBalance !== null && data.manualBalance !== undefined){
+        document.getElementById('manualBalance').placeholder = String(data.manualBalance);
+      }
+    }
+    delete window[cbName];
+    script.remove();
+  };
+  const script = document.createElement('script');
+  script.src = WEBHOOK_URL + '?action=summary&month=' + encodeURIComponent(month) + '&callback=' + cbName;
+  script.onerror = function(){
+    document.getElementById('sumIncome').textContent = 'ошибка';
+    document.getElementById('sumExpense').textContent = 'ошибка';
+  };
+  document.body.appendChild(script);
+}
+
+function submitBalance(){
+  const amount = document.getElementById('manualBalance').value;
+  const status = document.getElementById('balanceStatus');
+  const btn = document.getElementById('balanceBtn');
+  const month = document.getElementById('month').value || currentMonthValue();
+
+  if(!amount || isNaN(parseFloat(amount))){
+    status.textContent = 'Введите сумму остатка';
+    status.className = 'status err';
+    return;
+  }
+  if(WEBHOOK_URL.indexOf('ВСТАВЬТЕ') !== -1){
+    status.textContent = 'Не задан WEBHOOK_URL в коде страницы';
+    status.className = 'status err';
+    return;
+  }
+
+  document.getElementById('b_amount').value = amount;
+  document.getElementById('b_month').value = month;
+  const form = document.getElementById('balanceForm');
+  form.action = WEBHOOK_URL;
+
+  btn.disabled = true;
+  status.textContent = 'Сохраняю…';
+  status.className = 'status';
+  form.submit();
+
+  setTimeout(()=>{
+    status.textContent = '✅ Остаток сохранён: ' + amount + ' ₽';
+    status.className = 'status ok';
+    btn.disabled = false;
+  }, 900);
+}
+
+let currentType = 'expense';
+let history = [];
+
+function currentMonthValue(){
+  const d = new Date();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  return d.getFullYear() + '-' + m;
+}
+
+function fillCategories(){
+  const sel = document.getElementById('category');
+  sel.innerHTML = '';
+  const list = currentType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+  list.forEach(name=>{
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+}
+
+function setType(type){
+  currentType = type;
+  document.getElementById('btnExpense').classList.toggle('active', type==='expense');
+  document.getElementById('btnIncome').classList.toggle('active', type==='income');
+  fillCategories();
+}
+
+function submitEntry(){
+  const category = document.getElementById('category').value;
+  const amount = document.getElementById('amount').value;
+  const month = document.getElementById('month').value || currentMonthValue();
+  const status = document.getElementById('status');
+  const btn = document.getElementById('submitBtn');
+
+  if(!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0){
+    status.textContent = 'Введите сумму';
+    status.className = 'status err';
+    return;
+  }
+  if(WEBHOOK_URL.indexOf('ВСТАВЬТЕ') !== -1){
+    status.textContent = 'Не задан WEBHOOK_URL в коде страницы';
+    status.className = 'status err';
+    return;
+  }
+
+  document.getElementById('f_category').value = category;
+  document.getElementById('f_amount').value = amount;
+  document.getElementById('f_month').value = month;
+  document.getElementById('f_mode').value = 'add';
+
+  const form = document.getElementById('hiddenForm');
+  form.action = WEBHOOK_URL;
+
+  btn.disabled = true;
+  status.textContent = 'Отправляю…';
+  status.className = 'status';
+
+  form.submit();
+
+  // Мы не можем прочитать ответ сервера из-за ограничений браузера (CORS),
+  // поэтому просто считаем отправку успешной после короткой паузы.
+  setTimeout(()=>{
+    status.textContent = '✅ Отправлено: ' + category + ' — ' + amount + ' ₽';
+    status.className = 'status ok';
+    btn.disabled = false;
+
+    history.unshift({category, amount, month, type: currentType});
+    if(history.length > 5) history.pop();
+    renderHistory();
+
+    document.getElementById('amount').value = '';
+    loadSummary();
+  }, 900);
+}
+
+function renderHistory(){
+  const block = document.getElementById('historyBlock');
+  const list = document.getElementById('historyList');
+  if(history.length === 0){ block.style.display = 'none'; return; }
+  block.style.display = 'block';
+  list.innerHTML = '';
+  history.forEach(h=>{
+    const row = document.createElement('div');
+    row.className = 'history-item';
+    row.innerHTML = `<span>${h.category}</span><span>${h.type==='income'?'+':'-'}${h.amount} ₽</span>`;
+    list.appendChild(row);
+  });
+}
+
+document.getElementById('month').value = currentMonthValue();
+fillCategories();
+loadSummary();
+</script>
+</body>
+</html>
